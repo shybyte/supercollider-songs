@@ -7,6 +7,7 @@ readDrum = {|file| Buffer.read(s, drumsDir++file)};
 ~bassdrum = readDrum.("bassdrum_acoustic01.wav");
 ~clap = readDrum.("clap01.wav");
 ~snare = readDrum.("snare01.wav");
+~zap = readDrum.("zap.wav");
 
 SynthDef(\playbuf, { |amp =1, out=0, rate=1, buf |
 	var sig;

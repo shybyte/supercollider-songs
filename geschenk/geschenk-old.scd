@@ -3,7 +3,7 @@ var drumsDir;
 TempoClock.default.tempo = 140/120;    // 2 beats/sec, or 120 BPM
 ~reverbBus = 40;
 Buffer.freeAll;
-var drumsDir = "/home/shybyte/mymusic/supercollider-songs/samples/drums/";
+
 ~bassdrum = Buffer.read(s, "/home/shybyte/mymusic/supercollider-songs/samples/drums/bassdrum_acoustic01.wav");
 ~clap = Buffer.read(s, "/home/shybyte/dev/sc/samples/drums/clap01.wav");
 ~snare = Buffer.read(s, "/home/shybyte/dev/sc/samples/drums/snare01.wav");
