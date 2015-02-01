@@ -17,6 +17,15 @@ Buffer.freeAll;
 	));
 };
 
+~jupiter = { |key, baseMidiNotes |
+	Pdef(key,
+		Pbind(
+			\instrument, \jupiter,
+			\dur, 0.25,
+			\midinote, Pseq(all {:Pser([m[0]-12,m[0],m[0]+12],m[1]), m <- baseMidiNotes})
+	));
+};
+
 ~beat = { | buffer,beatString ,dur=0.125|
 	var durArray,buf,beatArray;
 	beatArray = Array.newFrom(beatString);
@@ -33,26 +42,20 @@ Buffer.freeAll;
 	);
 };
 
-)
-
-
-(
 ~beatSimple = Pdef(\beatSimple, Ppar([
 	~beat.(~bassdrum,"x...x...x...x..."),
 	~beat.(~clap,    "....x.......x..."),
 ],4));
-~beatSimple.play(quant: 4);
-)
+//~beatSimple.play(quant: 4);
 
 
-(
 ~beatChorus = Pdef(\beatChorus, Ppar([
 	~beat.(~bassdrum,"x.x...x.x.x...x."),
 	~beat.(~clap,    "....x.......x..."),
 	~beat.(~zap,     "..x...x..x.x.x.x"),
 	~beat.(~snare,   "....x..x....x.x.")
 ],4));
-~beatChorus.play(quant: 0);
+//~beatChorus.play(quant: 0);
 )
 
 
@@ -64,8 +67,10 @@ Buffer.freeAll;
 ~bass_CB = ~bass.(\bass_CB,[48,46]);
 ~bass_dBFF = ~bass.(\bass_dBFF,[50,46,41,41]);
 
+~jupiter_dBFF = ~jupiter.(\jupiter_dBFF,[[50,8], [46,8], [41,16]]);
+~jupiter_dBFG = ~jupiter.(\jupiter_dBFG,[[50,8], [46,8], [41,8], [43,8]]);
 
-//s.freeAll;
+s.freeAll;
 Synth.new(\reverb, [\in,~reverbBus]);
 Pseq([
 	~bass_dBFG,
@@ -73,9 +78,9 @@ Pseq([
 	Ppar([~bass_hhGD, ~beatSimple], 2),
 	Ppar([~bass_CB, Pfindur(2,~beatSimple)]),
 	// Chorus
-	Ppar([~bass_dBFF, ~beatChorus], 2),
-	Ppar([~bass_dBFG, ~beatChorus], 1),
-	Ppar([~bass_dBFF, ~beatChorus], 1),
+	Ppar([~bass_dBFF, ~jupiter_dBFF, ~beatChorus], 2),
+	Ppar([~bass_dBFG, ~jupiter_dBFG, ~beatChorus], 1),
+	Ppar([~bass_dBFF, ~jupiter_dBFF, Pfindur(6,~beatChorus)], 1),
 ],inf).play;
 
 )
