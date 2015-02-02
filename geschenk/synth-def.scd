@@ -30,6 +30,20 @@ SynthDef(\jupiter, { |out, amp=0.3, freq=80|
 	snd = RLPF.ar(snd,EnvGen.ar(Env.linen(0.01, 0.3, 0.1))*2200+300,0.1);
 	OffsetOut.ar(out, snd*amp*0.2);
 }).add;
+
+SynthDef(\cello, { |out, amp=0.1, freq=440, gate=1, lastNote, midinote|
+	var snd,freqLine,lastFreq,fmod,amod;
+	freqLine = XLine.kr(lastNote.midicps, freq, 0.07*max(abs(lastNote-midinote),1));
+	fmod = SinOsc.kr(5)*1;
+	amod = SinOsc.kr(4)*0.05;
+	snd = [LFSaw.ar(freqLine+fmod-0.1),LFSaw.ar(freqLine+fmod+0.1)];
+	//snd = snd+[LFSaw.ar(freqLine/2+fmod-0.1,0.7),LFSaw.ar(freqLine/2+fmod+0.1,0.1)];
+	snd = snd+[LFSaw.ar(freqLine*2+fmod-0.1,0.3),LFSaw.ar(freqLine*2+fmod+0.1,1.5)];
+	snd = snd * EnvGen.ar(Env.adsr(0.1,0.1,0.8,2),gate, doneAction:2);
+	snd = RLPF.ar(snd, 2000,0.1);
+	OffsetOut.ar(out, snd*amp*(0.3+amod));
+}).add;
+
 )
 /*
 (Pdef(\test,
