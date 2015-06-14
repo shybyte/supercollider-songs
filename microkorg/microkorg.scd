@@ -5,19 +5,37 @@ MIDIIn.connectAll;
 
 (
 
-~makeSynth = { |name, osc|
- 	"test".postln;
+~oscByName = ( saw: LFSaw );
+~defaultSpec = (
+	osc1Wave: \saw,
+	attack: 0,
+	decay: 64,
+	sustain: 127,
+	releaseTime: 0
+);
+
+
+~makeSynth = { |name, specArg|
+	var spec = ~defaultSpec.merge(specArg, {|a,b| b}) ;
+	var osc1 = ~oscByName[spec.osc1Wave];
+	spec.postln;
  	SynthDef.new(\instr, { |freq=440, amp = 0.3, gate=0, bend=0 |
  	  var sig, env;
- 	  sig = osc.ar(freq * bend.midiratio)!2;
- 	  env = EnvGen.kr(Env.adsr,gate, doneAction:2);
- 	  sig = sig * env * amp;
+		sig = osc1.ar(freq * (~bend-8192).midiratio)!2;
+	  env = EnvGen.kr(Env.adsr(spec.attack/10, spec.decay/10, spec.sustain/127, spec.releaseTime/10),gate, doneAction:2);
+ 	  sig = sig * env;
+	  sig = sig + AllpassL.ar(sig, 0.4, SinOsc.ar(0.02, 0, 0.005, 0.005), 0);
+	  sig = sig * amp;
  	  Out.ar(0, sig);
  	}).add;
  };
 
-~makeSynth.(\instr, LFTri);
-~makeSynth.(\instr, SinOsc);
+~makeSynth.(\instr, (
+	osc1Wave: \saw,
+	attack: 5,
+	releaseTime: 15
+));
+//~makeSynth.(\instr, SinOsc);
 
 ~notes = Array.newClear(128);
 ~bend = 8192;
@@ -50,3 +68,5 @@ MIDIdef.bend(\bend, {
 }, chan: 0).permanent_(true);
 
 )
+
+
