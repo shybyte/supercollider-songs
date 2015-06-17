@@ -1,9 +1,9 @@
 (
 MIDIClient.init;
 MIDIIn.connectAll;
-)
 
-(
+s.newBusAllocators;
+s.freeAll;
 
 ~oscByName = ( saw: LFSaw );
 ~defaultSpec = (
@@ -13,24 +13,24 @@ MIDIIn.connectAll;
 	sustain: 127,
 	releaseTime: 0
 );
+
 ~notes = Array.newClear(128);
 ~bend = 8192;
 ~lastNote = 50;
-
 
 ~makeSynth = { |name, specArg|
 	var decayTime = 0.01;
 	var spec = ~defaultSpec.merge(specArg, {|a,b| b}) ;
 	var osc1 = ~oscByName[spec.osc1Wave];
 	spec.postln;
- 	SynthDef.new(\instr, { |freq=440, amp = 0.3, gate=0, bend=0 ,lastNote |
+ 	SynthDef.new(\instr, { |freq=440, amp = 0.3, gate=0, bend=0 ,lastNote, out=0 |
 		var feedback;
 		var freqLine = XLine.kr(lastNote.midicps, freq, 0.1);
 		var phaserLFO = SinOsc.kr(0.001*spec.modFxLfoSpeed, 0, 0.003, 0.007);
 		var phaser2LFO = SinOsc.kr(spec.modFxLfoSpeed/20, 0, freq*6, 440+freq*4);
 		var sig, env;
 		var sig2, sig3;
-		sig = osc1.ar(freqLine * (~bend-8192).midiratio)!2;
+		sig = [osc1.ar(freqLine * (~bend-8192).midiratio),osc1.ar((freqLine+0.3) * (~bend-8192).midiratio)];
 		env = EnvGen.kr(Env.adsr(spec.attack/10, spec.decay/10, spec.sustain/127, spec.releaseTime/10),gate, doneAction:2);
 		//env = EnvGen.kr(Env.adsr(0, 0, 1, 0.4),gate, doneAction:0);
 		sig = sig * env;
@@ -46,14 +46,23 @@ MIDIIn.connectAll;
 		sig = RLPF.ar(sig, phaser2LFO, 0.1);
 		sig = (LPF.ar(sig, 2200)*4+sig)/5/2;
 
-		feedback = LocalIn.ar(2);
+		Out.ar(out, sig*amp);
+ 	}).add;
+
+	SynthDef.new(\delay, { |in, amp=1 |
+	    var sig = In.ar(in,2);
+		var feedback = LocalIn.ar(2);
 		sig = feedback*0.3 + sig;
 		LocalOut.ar(DelayC.ar(sig, 1, 0.5));
-
-		//DetectSilence.ar(sig, doneAction:2);
 		Out.ar(0, sig*amp);
- 	}).add;
+	}).add;
+
+	~delayBus = Bus.audio(s,2);
+	~delay = Synth.new(\delay, [\in, ~delayBus]);
  };
+
+
+
 
 ~makeSynth.(\instr, (
 	osc1Wave: \saw,
@@ -62,13 +71,13 @@ MIDIIn.connectAll;
 	modFxLfoSpeed: 7,
 	modFxEffectDepth: 127
 ));
-//~makeSynth.(\instr, SinOsc);
 
 MIDIdef.noteOn(\noteOn, {
 	arg vel, nn, chan, src;
 	[vel, nn].postln;
 	~notes[nn] = Synth.new(\instr,
 		[
+			\out, ~delayBus,
 			\freq , nn.midicps,
 			\lastNote, ~lastNote,
 			\amp, vel.linexp(1,127,0.01, 0.3),
@@ -94,3 +103,7 @@ MIDIdef.bend(\bend, {
 }, chan: 0).permanent_(true);
 
 )
+
+s.plotTree;
+~delayBus;
+
