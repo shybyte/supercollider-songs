@@ -24,14 +24,18 @@ MIDIIn.connectAll;
 	var osc1 = ~oscByName[spec.osc1Wave];
 	spec.postln;
  	SynthDef.new(\instr, { |freq=440, amp = 0.3, gate=0, bend=0 ,lastNote |
-		var freqLine = XLine.kr(lastNote.midicps, freq, 0.2);
+		var feedback;
+		var freqLine = XLine.kr(lastNote.midicps, freq, 0.1);
 		var phaserLFO = SinOsc.kr(0.001*spec.modFxLfoSpeed, 0, 0.003, 0.007);
 		var phaser2LFO = SinOsc.kr(spec.modFxLfoSpeed/20, 0, freq*6, 440+freq*4);
 		var sig, env;
 		var sig2, sig3;
 		sig = osc1.ar(freqLine * (~bend-8192).midiratio)!2;
 		env = EnvGen.kr(Env.adsr(spec.attack/10, spec.decay/10, spec.sustain/127, spec.releaseTime/10),gate, doneAction:2);
+		//env = EnvGen.kr(Env.adsr(0, 0, 1, 0.4),gate, doneAction:0);
 		sig = sig * env;
+
+		//phaser
 		sig2 = 0;
 		sig3 = sig;
 		8.do { |x|
@@ -40,8 +44,14 @@ MIDIIn.connectAll;
 		};
 		sig = (sig + (spec.modFxEffectDepth/256*sig2));
 		sig = RLPF.ar(sig, phaser2LFO, 0.1);
-		sig = (LPF.ar(sig, 2200)*4+sig)/5;
-		Out.ar(0, sig*amp/10);
+		sig = (LPF.ar(sig, 2200)*4+sig)/5/2;
+
+		feedback = LocalIn.ar(2);
+		sig = feedback*0.3 + sig;
+		LocalOut.ar(DelayC.ar(sig, 1, 0.5));
+
+		//DetectSilence.ar(sig, doneAction:2);
+		Out.ar(0, sig*amp);
  	}).add;
  };
 
@@ -84,5 +94,3 @@ MIDIdef.bend(\bend, {
 }, chan: 0).permanent_(true);
 
 )
-
-8.do({|x| x.postln})
